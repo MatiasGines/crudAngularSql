@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { __values } from 'tslib';
 
 @Component({
@@ -23,10 +23,10 @@ export class TarjetaCreditoComponent implements OnInit {
 
   constructor(private fb: FormBuilder){
     this.form = this.fb.group({
-      titular: [''],
-      numeroTarjeta: [''],
-      fechaExpiracion: [''],
-      cvv: ['']
+      titular: ['', Validators.required],
+      numeroTarjeta: ['', [Validators.required, Validators.maxLength(16), Validators.minLength(16)]],
+      fechaExpiracion: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(5)]],
+      cvv: ['', [Validators.required, Validators.maxLength(3), Validators.minLength(3)]]
     })
   }
 
@@ -37,11 +37,12 @@ export class TarjetaCreditoComponent implements OnInit {
     //obtener los valores en un objeto
     const tarjeta: any = {
     titular: this.form.get('titular')?.value,
-    numeroTarjeta: this.form.get('titular')?.value,
-    fechaExpiracion: this.form.get('titular')?.value,
-    cvv: this.form.get('titular')?.value
+    numeroTarjeta: this.form.get('numeroTarjeta')?.value,
+    fechaExpiracion: this.form.get('fechaExpiracion')?.value,
+    cvv: this.form.get('cvv')?.value
     }
     
+    console.log("se imprime");
     this.listTarjetas.push(tarjeta);
     this.form.reset();
   }
