@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
+import { TarjetaService } from 'src/app/services/tarjeta.service';
 import { __values } from 'tslib';
 
 @Component({
@@ -11,19 +12,15 @@ import { __values } from 'tslib';
 
 
 export class TarjetaCreditoComponent implements OnInit {
-  listTarjetas: any[] = [
-    {
-      titular: 'Pedro Orlando', numeroTarjeta:"2121212121212121", fechaExpiracion:'11/21', cvv:'123'
-    },
-    {
-      titular: 'Nicolas Jackson', numeroTarjeta:"5454548787878787", fechaExpiracion:'11/22', cvv:'321'
-    }
-  ];
-
+  listTarjetas: any[] = [];
+  accion = 'Agregar';
   form: FormGroup;
+  id: number | undefined;
+
 
   constructor(private fb: FormBuilder,
-    private toastr: ToastrService){
+    private toastr: ToastrService,
+    private _tarjetaService: TarjetaService){
     this.form = this.fb.group({
       titular: ['', Validators.required],
       numeroTarjeta: ['', [Validators.required, Validators.maxLength(16), Validators.minLength(16)]],
@@ -33,9 +30,19 @@ export class TarjetaCreditoComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.obtenerTarjetas();
   }
 
-  agregarTarjeta(){
+  obtenerTarjetas(){
+    this._tarjetaService.getListTarjetas().subscribe(data=>{
+      console.log(data);
+      this.listTarjetas = data;
+    }, error =>{
+      console.log(error);
+    }) 
+  }
+
+  guardarTarjeta(){
     //obtener los valores en un objeto
     const tarjeta: any = {
     titular: this.form.get('titular')?.value,
@@ -43,14 +50,53 @@ export class TarjetaCreditoComponent implements OnInit {
     fechaExpiracion: this.form.get('fechaExpiracion')?.value,
     cvv: this.form.get('cvv')?.value
     }
-    
-    this.toastr.success('La tarjeta fue registrada con éxito', 'Tarjeta registrada');
-    this.listTarjetas.push(tarjeta);
-    this.form.reset();
+
+    if(this.id == undefined){
+      //agregamos tarjeta
+      this._tarjetaService.saveTarjeta(tarjeta).subscribe(data=>{
+        this.toastr.success('La tarjeta fue registrada con éxito', 'Tarjeta registrada');
+        this.obtenerTarjetas();
+        this.form.reset();
+      },error=>{
+        this.toastr.error('No se ha podido guardar esta tarjeta','Error')
+      }
+      )
+
+    }else {
+      //editamos tarjeta
+      tarjeta.id=this.id;
+
+      this._tarjetaService.updateTarjeta(this.id, tarjeta).subscribe(data=>{
+      this.form.reset();
+      this.accion='Agregar';
+      this.id = undefined;
+      this.toastr.info('La tarjeta se actualizo con exito!','Tarjeta actualizada');
+      this.obtenerTarjetas();
+      },error=>{
+        console.log(error);
+      })
+    }
+
   }
-  eliminarTarjeta(index: number){
-    this.listTarjetas.splice(index, 1);
-    this.toastr.error('La tarjeta fue eliminada con éxito', 'Tarjeta eliminada')
+  eliminarTarjeta(id: number){
+    this._tarjetaService.deleteTarjeta(id).subscribe(data=> {
+      this.toastr.error('La tarjeta fue eliminada con éxito', 'Tarjeta eliminada');
+      this.obtenerTarjetas();
+    }, error =>{
+      console.log(error);
+    }
+    )
+  }
+  editarTarjeta(tarjeta: any){
+    this.accion = 'editar';
+    this.id = tarjeta.id;
+
+    this.form.patchValue({
+      titular: tarjeta.titular,
+      numeroTarjeta: tarjeta.numeroTarjeta,
+      fechaExpiracion: tarjeta.fechaExpiracion,
+      cvv: tarjeta.cvv
+    })
   }
 
 }
